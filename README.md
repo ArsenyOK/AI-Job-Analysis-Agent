@@ -15,20 +15,6 @@ The system automatically:
 
 ---
 
-# Features
-
-- Automatic job scraping
-- HTML cleaning & extraction
-- AI job analysis
-- Match scoring
-- AI-generated cover letters
-- Google Sheets integration
-- Telegram notifications
-- Automated workflow execution
-- Dockerized local setup
-
----
-
 # Stack
 
 - n8n
