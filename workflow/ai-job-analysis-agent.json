@@ -27,7 +27,7 @@
       },
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [320, -192],
+      "position": [-128, -224],
       "id": "c6de1c83-59c3-46fe-9819-c3c0c9adc354",
       "name": "If"
     },
@@ -51,9 +51,11 @@
       },
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
-      "position": [592, -208],
+      "position": [496, -464],
       "id": "8278926d-dfc8-47d2-9321-b280808fbe47",
-      "name": "HTTP Request"
+      "name": "HTTP Request",
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -70,7 +72,7 @@
               "content": "=You are an AI job analysis assistant.\n\nYour task is to analyze raw job posting text and return structured JSON.\n\nRules:\n- Return ONLY valid JSON.\n- Do NOT use markdown.\n- Do NOT add explanations.\n- Do NOT invent information.\n- If information is missing, use \"Not specified\".\n- Extract information ONLY from the provided job text.\n- Be concise but informative.\n- Keep responses professional and factual.\n- techStack should contain only technologies.\n- requirements should summarize actual requirements from the job posting.\n- pros and cons should evaluate the job fit for the candidate profile.\n- matchPercent must be a number from 0 to 100.\n- coverLetter must be short, personalized, and professional.\n- recommendation must be one of:\n  \"Apply\"\n  \"Maybe Apply\"\n  \"Do Not Apply\"\n\nThe response must always be valid parsable JSON."
             },
             {
-              "content": "Analyze this job posting.\n\nJob Text:\n{{$json.jobText}}\n\nCandidate Profile:\n- Senior Frontend Engineer\n- 5+ years experience\n- Strong React\n- Strong Angular\n- TypeScript\n- JavaScript\n- Performance optimization\n- SaaS applications\n- AI integrations\n- Dashboards\n- Data-heavy interfaces\n- Ex-Palo Alto Networks\n- English B2\n- Preferred roles:\n  - Senior Frontend Engineer\n  - Frontend Engineer\n  - Software Engineer Frontend\n- Expected salary:\n  $4k–$5k/month\n\nReturn JSON in this exact format:\n\n{\n  \"company\": \"\",\n  \"position\": \"\",\n  \"location\": \"\",\n  \"salary\": \"\",\n  \"techStack\": [],\n  \"requirements\": \"\",\n  \"matchPercent\": 0,\n  \"recommendation\": \"\",\n  \"pros\": \"\",\n  \"cons\": \"\",\n  \"coverLetter\": \"\"\n}"
+              "content": "Analyze this job posting.\n\nJob Text:\n{{$json.jobText}}\n\nCandidate Profile:\n- Senior Frontend Engineer\n- 5+ years experience\n- Strong React\n- Strong Angular\n- TypeScript\n- JavaScript\n- Performance optimization\n- SaaS applications\n- AI integrations\n- Dashboards\n- Data-heavy interfaces\n- Ex-Palo Alto Networks\n- English B2\n- Preferred roles:\n  - Senior Frontend Engineer\n  - Frontend Engineer\n  - Software Engineer Frontend\n- Expected salary:\n  $4k–$5k/month\n\nReturn JSON in this exact format:\n\n{\n  \"company\": \"\",\n  \"position\": \"\",\n  \"location\": \"\",\n  \"salary\": \"\",\n  \"techStack\": [],\n  \"requirements\": \"\",\n  \"matchPercent\": 0,\n  \"recommendation\": \"\",\n  \"pros\": \"\",\n  \"cons\": \"\",\n  \"coverLetter\": \"\",\n  \"priority\": \"\",\n  \"tags\": []\n}"
             }
           ]
         },
@@ -80,16 +82,18 @@
       },
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 2.3,
-      "position": [960, -208],
+      "position": [992, -144],
       "id": "acda107e-e90e-4b44-a466-9a7efbf92c67",
       "name": "Message a model",
       "alwaysOutputData": true,
+      "retryOnFail": true,
       "credentials": {
         "openAiApi": {
           "id": "kaTQXGy1UTxDP3a1",
           "name": "OpenAI account"
         }
-      }
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -285,7 +289,7 @@
       },
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
-      "position": [1376, -208],
+      "position": [1856, -272],
       "id": "b04419f5-f412-4679-93a5-951c623b376d",
       "name": "Update row in Google Sheet",
       "credentials": {
@@ -303,7 +307,7 @@
       },
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [1632, -208],
+      "position": [2080, -400],
       "id": "81baaba8-a3f5-4c3a-9d8a-c84c97d48044",
       "name": "Send a message from Bot",
       "webhookId": "4d834bb4-523d-4519-8421-d9aad144797a",
@@ -317,24 +321,323 @@
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "const id = $('Get row(s) in Google Sheet').item.json.ID;\nconst html = $json.data || '';\nconst rowNumber = $('Get row(s) in Google Sheet').item.json.row_number;\n\nconst cleaned = html\n  .replace(/<script[\\s\\S]*?<\\/script>/gi, ' ')\n  .replace(/<style[\\s\\S]*?<\\/style>/gi, ' ')\n  .replace(/<noscript[\\s\\S]*?<\\/noscript>/gi, ' ')\n  .replace(/<[^>]+>/g, ' ')\n  .replace(/&nbsp;/g, ' ')\n  .replace(/&amp;/g, '&')\n  .replace(/&lt;/g, '<')\n  .replace(/&gt;/g, '>')\n  .replace(/&quot;/g, '\"')\n  .replace(/&#39;/g, \"'\")\n  .replace(/\\s+/g, ' ')\n  .trim();\n\nreturn {\n  rowNumber,\n  id,\n  jobText: cleaned.slice(0, 20000),\n};"
+        "jsCode": "const id = $('Get Jobs').item.json.ID;\nconst html = $json.data || '';\nconst rowNumber = $('Get Jobs').item.json.row_number;\n\nconst cleaned = html\n  .replace(/<script[\\s\\S]*?<\\/script>/gi, ' ')\n  .replace(/<style[\\s\\S]*?<\\/style>/gi, ' ')\n  .replace(/<noscript[\\s\\S]*?<\\/noscript>/gi, ' ')\n  .replace(/<[^>]+>/g, ' ')\n  .replace(/&nbsp;/g, ' ')\n  .replace(/&amp;/g, '&')\n  .replace(/&lt;/g, '<')\n  .replace(/&gt;/g, '>')\n  .replace(/&quot;/g, '\"')\n  .replace(/&#39;/g, \"'\")\n  .replace(/\\s+/g, ' ')\n  .trim();\n\nreturn {\n  rowNumber,\n  id,\n  jobText: cleaned.slice(0, 20000),\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [784, -32],
+      "position": [816, -144],
       "id": "27651855-c699-41f0-860d-3b363853bc81",
       "name": "Decode HTML to Text"
     },
     {
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "const rawText = $json.output?.[0]?.content?.[0]?.text;\n\nif (!rawText) {\n  throw new Error('OpenAI response text not found');\n}\n\nconst parsed = JSON.parse(rawText);\n\nconst sourceRow = $('Get row(s) in Google Sheet').item.json;\n\nreturn {\n  some: sourceRow,\n  id: sourceRow.ID,\n  jobUrl: sourceRow['Job URL'],\n  company: parsed.company || 'Not specified',\n  position: parsed.position || 'Not specified',\n  location: parsed.location || 'Not specified',\n  salary: parsed.salary || 'Not specified',\n  techStack: Array.isArray(parsed.techStack)\n    ? parsed.techStack.join(', ')\n    : parsed.techStack || 'Not specified',\n  requirements: parsed.requirements || 'Not specified',\n  matchPercent: parsed.matchPercent || 0,\n  recommendation: parsed.recommendation || 'Not specified',\n  pros: parsed.pros || 'Not specified',\n  cons: parsed.cons || 'Not specified',\n  coverLetter: parsed.coverLetter || 'Not specified',\n};"
+        "jsCode": "const rawText = $json.output?.[0]?.content?.[0]?.text;\n\nif (!rawText) {\n  throw new Error('OpenAI response text not found');\n}\n\nconst parsed = JSON.parse(rawText);\n\nconst sourceRow = $('Get Jobs').item.json;\n\nreturn {\n  some: sourceRow,\n  id: sourceRow.ID,\n  jobUrl: sourceRow['Job URL'],\n  company: parsed.company || 'Not specified',\n  position: parsed.position || 'Not specified',\n  location: parsed.location || 'Not specified',\n  salary: parsed.salary || 'Not specified',\n  techStack: Array.isArray(parsed.techStack)\n    ? parsed.techStack.join(', ')\n    : parsed.techStack || 'Not specified',\n  requirements: parsed.requirements || 'Not specified',\n  matchPercent: parsed.matchPercent || 0,\n  recommendation: parsed.recommendation || 'Not specified',\n  pros: parsed.pros || 'Not specified',\n  cons: parsed.cons || 'Not specified',\n  coverLetter: parsed.coverLetter || 'Not specified',\n  tags: parsed.tags || 'Not specified',\n  priority: parsed.priority || 'Not specified',\n};"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1232, -32],
+      "position": [1312, -144],
       "id": "0cecd522-f70d-4458-91a9-17aa17b8abbb",
-      "name": "Get data from JSON"
+      "name": "Get data from JSON",
+      "retryOnFail": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [-592, -224],
+      "id": "fc7b914a-4952-4f6c-b1cb-fcc61ecd0559",
+      "name": "Adding a new item"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "00d101da-808f-49d4-aa4d-df5beaec038d",
+              "leftValue": "={{ $json.matchPercent }}",
+              "rightValue": 80,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1456, -256],
+      "id": "d3b81cfb-06b6-445f-90f8-9c2d1238dc00",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "9bcf1ffa-93b4-4b17-b948-7b7f0ef6ab1d",
+              "leftValue": "={{ !!$json.error }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [672, -448],
+      "id": "b098b409-080d-4022-b15c-71af509a48d6",
+      "name": "IF HTTP Error"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "19x9YiLmO3dj8X5lt0DxHmlYqwHOyAgWeA9Yb3URo0z8",
+          "mode": "list",
+          "cachedResultName": "AI Job Analysis Agent",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19x9YiLmO3dj8X5lt0DxHmlYqwHOyAgWeA9Yb3URo0z8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Аркуш1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19x9YiLmO3dj8X5lt0DxHmlYqwHOyAgWeA9Yb3URo0z8/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID": "={{ $('Get Jobs').item.json.ID }}",
+            "Status": "Error",
+            "Error": "={{$json.error.message || JSON.stringify($json.error)}}",
+            "Processed At": "={{ DateTime.now().setZone('Europe/Kyiv').toFormat('dd.MM.yyyy HH:mm') }}"
+          },
+          "matchingColumns": ["ID"],
+          "schema": [
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Job URL",
+              "displayName": "Job URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Position",
+              "displayName": "Position",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Location",
+              "displayName": "Location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Salary",
+              "displayName": "Salary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tech Stack",
+              "displayName": "Tech Stack",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Requirements",
+              "displayName": "Requirements",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Match %",
+              "displayName": "Match %",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recommendation",
+              "displayName": "Recommendation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Pros",
+              "displayName": "Pros",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cons",
+              "displayName": "Cons",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cover Letter",
+              "displayName": "Cover Letter",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Processed At",
+              "displayName": "Processed At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tags",
+              "displayName": "Tags",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Priority",
+              "displayName": "Priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Error",
+              "displayName": "Error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [864, -464],
+      "id": "e317ba05-008d-420e-a64a-cc025d58a220",
+      "name": "Update Row Error",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DiRh4Z2W2A7XIuZ0",
+          "name": "Google Sheets account"
+        }
+      }
     },
     {
       "parameters": {
@@ -356,9 +659,9 @@
       },
       "type": "n8n-nodes-base.googleSheets",
       "typeVersion": 4.7,
-      "position": [128, -16],
+      "position": [-368, -224],
       "id": "bb9d023b-be75-4afe-95c3-f9255cf33cad",
-      "name": "Get row(s) in Google Sheet",
+      "name": "Get Jobs",
       "executeOnce": false,
       "credentials": {
         "googleSheetsOAuth2Api": {
@@ -369,20 +672,272 @@
     },
     {
       "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "minutes",
-              "minutesInterval": 1
-            }
-          ]
-        }
+        "options": {}
       },
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.3,
-      "position": [-128, -16],
-      "id": "fc7b914a-4952-4f6c-b1cb-fcc61ecd0559",
-      "name": "Adding a new item"
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [224, -480],
+      "id": "e12ea441-18af-4b05-a90f-891763f01b0e",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [2272, -688],
+      "id": "4ee84c94-bc7d-4e49-8215-b533ed8fbe82",
+      "name": "Wait2",
+      "webhookId": "49623d8f-b864-4381-aa02-8d6b927181db"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1056, -464],
+      "id": "2d6f1d70-3bf5-49fb-9bc3-3c38fddb00f2",
+      "name": "Wait Error",
+      "webhookId": "49623d8f-b864-4381-aa02-8d6b927181db"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "19x9YiLmO3dj8X5lt0DxHmlYqwHOyAgWeA9Yb3URo0z8",
+          "mode": "list",
+          "cachedResultName": "AI Job Analysis Agent",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19x9YiLmO3dj8X5lt0DxHmlYqwHOyAgWeA9Yb3URo0z8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Аркуш1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19x9YiLmO3dj8X5lt0DxHmlYqwHOyAgWeA9Yb3URo0z8/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "ID": "={{ $json.id }}",
+            "Job URL": "={{ $json.jobUrl }}",
+            "Company": "={{ $json.company }}",
+            "Position": "={{ $json.position }}",
+            "Location": "={{ $json.location }}",
+            "Salary": "={{ $json.salary }}",
+            "Tech Stack": "={{ $json.techStack }}",
+            "Requirements": "={{ $json.requirements }}",
+            "Match %": "={{ $json.matchPercent }}",
+            "Recommendation": "={{ $json.recommendation }}",
+            "Pros": "={{ $json.pros }}",
+            "Cons": "={{ $json.cons }}",
+            "Cover Letter": "={{ $json.coverLetter }}",
+            "Tags": "={{ $json.tags }}",
+            "Status": "Done",
+            "Priority": "={{ $json.priority }}",
+            "Processed At": "={{ DateTime.now().setZone('Europe/Kyiv').toFormat('dd.MM.yyyy HH:mm') }}"
+          },
+          "matchingColumns": ["ID"],
+          "schema": [
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Job URL",
+              "displayName": "Job URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Company",
+              "displayName": "Company",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Position",
+              "displayName": "Position",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Location",
+              "displayName": "Location",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Salary",
+              "displayName": "Salary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tech Stack",
+              "displayName": "Tech Stack",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Requirements",
+              "displayName": "Requirements",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Match %",
+              "displayName": "Match %",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Recommendation",
+              "displayName": "Recommendation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Pros",
+              "displayName": "Pros",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cons",
+              "displayName": "Cons",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Cover Letter",
+              "displayName": "Cover Letter",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Processed At",
+              "displayName": "Processed At",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Tags",
+              "displayName": "Tags",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Priority",
+              "displayName": "Priority",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Error",
+              "displayName": "Error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [1648, -32],
+      "id": "9929b5f9-7ce4-4a2e-b988-33bcc1de031b",
+      "name": "Update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "DiRh4Z2W2A7XIuZ0",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1872, -32],
+      "id": "9ddef347-e4e8-4e85-a7a5-819a3a88a269",
+      "name": "Wait",
+      "webhookId": "1fef1bf6-40cb-4ef5-8c9f-d309312011bf"
     }
   ],
   "pinData": {},
@@ -391,18 +946,19 @@
       "main": [
         [
           {
-            "node": "HTTP Request",
+            "node": "Loop Over Items",
             "type": "main",
             "index": 0
           }
-        ]
+        ],
+        []
       ]
     },
     "HTTP Request": {
       "main": [
         [
           {
-            "node": "Decode HTML to Text",
+            "node": "IF HTTP Error",
             "type": "main",
             "index": 0
           }
@@ -432,7 +988,15 @@
       ]
     },
     "Send a message from Bot": {
-      "main": [[]]
+      "main": [
+        [
+          {
+            "node": "Wait2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Decode HTML to Text": {
       "main": [
@@ -449,18 +1013,7 @@
       "main": [
         [
           {
-            "node": "Update row in Google Sheet",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get row(s) in Google Sheet": {
-      "main": [
-        [
-          {
-            "node": "If",
+            "node": "If1",
             "type": "main",
             "index": 0
           }
@@ -471,7 +1024,121 @@
       "main": [
         [
           {
-            "node": "Get row(s) in Google Sheet",
+            "node": "Get Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Update row in Google Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF HTTP Error": {
+      "main": [
+        [
+          {
+            "node": "Update Row Error",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Decode HTML to Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Jobs": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Row Error": {
+      "main": [
+        [
+          {
+            "node": "Wait Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait2": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Error": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
             "type": "main",
             "index": 0
           }
@@ -484,7 +1151,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "06eb9c15-3460-4da9-8878-2d360b12d71a",
+  "versionId": "068e3e99-e516-4b63-9ae7-9e213f4b652e",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "6063e244d7869bdfe27f110441f33c1a134f60ab193f21ac8434a55cdaed0e1e"
